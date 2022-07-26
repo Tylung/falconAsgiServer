@@ -9,6 +9,3 @@ class Home:
         # resp.status = falcon.HTTP_200
         # ya falcon pone por defecto el status 200
         resp.text = (file)
-        
-
-
