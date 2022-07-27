@@ -1,6 +1,6 @@
 import aiofiles
 import falcon
-
+from falcon.media.validators.jsonschema import validate
 
 class Images:
 
@@ -21,14 +21,29 @@ class Images:
         resp.content_type = falcon.MEDIA_JPEG
 
     async def on_post(self, req, resp):
-        data = await req.stream.read()
+        
         image_id = str(self._config.uuid_generator())
-        image = await self._store.save(image_id, data)
+        if 'multipart/form-data' in req.content_type: 
+            async for part in await req.get_media():
+                print( part )
+                data = await part.stream.readall()
+                image = await self._store.save(image_id, data)
+                resp.location = image.uri
+                resp.media = image.serialize()
+                resp.status = falcon.HTTP_201
+        else: 
+            data = await req.stream.read()
+            image_id = str(self._config.uuid_generator())
+            image = await self._store.save(image_id, data)
+            resp.location = image.uri
+            resp.media = image.serialize()
+            resp.status = falcon.HTTP_201            
 
-        resp.location = image.uri
-        resp.media = image.serialize()
-        resp.status = falcon.HTTP_201
 
+
+            print(image)
+
+            
 
 
 class Thumbnails:
@@ -41,8 +56,7 @@ class Thumbnails:
             raise falcon.HTTPNotFound
         if req.path not in image.thumbnails():
             raise falcon.HTTPNotFound
-        
+
         resp.content_type = falcon.MEDIA_JPEG
 
         resp.data = await self._store.make_thumbnail(image, (width, height))
-
