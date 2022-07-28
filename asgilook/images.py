@@ -1,6 +1,8 @@
 import aiofiles
 import falcon
 from falcon.media.validators.jsonschema import validate
+from .schemas import load_schema
+
 
 class Images:
 
@@ -20,12 +22,12 @@ class Images:
         resp.stream = await aiofiles.open(image.path, 'rb')
         resp.content_type = falcon.MEDIA_JPEG
 
+    # @validate(load_schema('img_creation'))
     async def on_post(self, req, resp):
         
         image_id = str(self._config.uuid_generator())
         if 'multipart/form-data' in req.content_type: 
             async for part in await req.get_media():
-                print( part )
                 data = await part.stream.readall()
                 image = await self._store.save(image_id, data)
                 resp.location = image.uri
